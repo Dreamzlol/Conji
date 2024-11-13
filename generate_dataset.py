@@ -29,51 +29,7 @@ def read_pdf(file_path):
             text += page.extract_text()
     return text
 
-def clean_json_string(json_str):
-    """Clean and sanitize JSON string to handle common issues."""
-    import re
-    
-    # Remove any potential Unicode control characters
-    json_str = ''.join(char for char in json_str if ord(char) >= 32 or char in '\n\r\t')
-    
-    # Fix invalid escape sequences
-    def fix_escapes(match):
-        s = match.group(0)
-        if s in ('\\n', '\\r', '\\t', '\\b', '\\f', '\\"', '\\\\'):
-            return s
-        return '\\\\' + s[1]
-    
-    # Fix escape sequences
-    json_str = re.sub(r'\\[^"\\\/bfnrt]', fix_escapes, json_str)
-    
-    # Fix delimiter issues
-    json_str = re.sub(r'\}\s*\{', '},{', json_str)  # Fix missing commas between objects
-    json_str = re.sub(r'\]\s*\[', '],[', json_str)  # Fix missing commas between arrays
-    json_str = re.sub(r'(?<=[}\]])\s*(?=[{\[])', ',', json_str)  # Add missing commas
-    
-    # Remove trailing commas (invalid in JSON)
-    json_str = re.sub(r',(\s*[}\]])', r'\1', json_str)
-    
-    # Handle any remaining invalid escape sequences
-    json_str = re.sub(r'(?<!\\)\\(?!["\\/bfnrt])', r'\\\\', json_str)
-    
-    try:
-        # Verify the JSON is valid by parsing and re-stringifying it
-        parsed = json.loads(json_str)
-        return json.dumps(parsed)
-    except json.JSONDecodeError:
-        # If parsing fails, try to fix common structural issues
-        if not json_str.startswith('['):
-            json_str = '[' + json_str
-        if not json_str.endswith(']'):
-            json_str = json_str + ']'
-        
-        # Add debug logging to see the problematic JSON
-        logger.debug(f"Problematic JSON: {json_str[:1000]}...")
-        return json_str
-
 def generate_qa_pairs(content):
-    # Get the API key from the environment variable
     api_key = os.getenv('ANTHROPIC_API_KEY')
     if not api_key:
         raise ValueError("❌ ANTHROPIC_API_KEY not found in .env file")
@@ -84,7 +40,7 @@ def generate_qa_pairs(content):
     You are tasked with creating educational question-answer pairs from technical documentation. Focus exclusively on the content provided in the PDF.
 
     Instructions:
-    1. Generate 25 question-answer pairs that cover key concepts, techniques, and code examples from the documentation
+    1. Generate 20 question-answer pairs that cover key concepts, techniques, and code examples from the documentation
     2. For code-related content:
        - Use only code examples that appear in the documentation
        - Include the original code snippets in your answers
@@ -95,7 +51,7 @@ def generate_qa_pairs(content):
        - Reference specific sections from the documentation and always provide the example code from the PDF file
     4. Each answer should be detailed yet concise, focusing on practical understanding
 
-    Format: ALWAYS return a valid JSON array of objects with 'question' and 'answer' keys, without the JSON Markdown Code Block. Make sure you return a valid JSON array.
+    Format: Return a valid JSON array of objects with only the 'question' and 'answer' keys, without the JSON Markdown Code Block or any additional text.
     Content: {content}
     """
     
@@ -105,7 +61,7 @@ def generate_qa_pairs(content):
         model="claude-3-5-haiku-latest",
         max_tokens=8192,
         temperature=0.3,
-        system="You are a technical documentation expert. Create precise, practical Q&A pairs that accurately reflect the source material without adding external information. Focus on code examples, technical concepts, and implementation details exactly as presented in the documentation. Return ONLY a valid JSON array with no additional text or formatting.",
+        system="You are a technical documentation expert. Create precise, practical Q&A pairs that accurately reflect the source material.",
         messages=[
             {
                 "role": "user",
@@ -115,59 +71,11 @@ def generate_qa_pairs(content):
     )
     
     try:
-        # Get the response text and clean it
-        response_text = message.content[0].text
-        
-        # Only remove JSON markdown blocks at the start/end of the response
-        # This preserves code blocks within the answers
-        if response_text.startswith('```json'):
-            response_text = response_text[7:]  # Remove ```json prefix
-        if response_text.endswith('```'):
-            response_text = response_text[:-3]  # Remove ``` suffix
-        response_text = response_text.strip()
-        
-        # Ensure the response starts with [ and ends with ]
-        if not response_text.startswith('['):
-            response_text = '[' + response_text
-        if not response_text.endswith(']'):
-            response_text = response_text + ']'
-        
-        cleaned_json = clean_json_string(response_text)
-        
-        # Try to parse the JSON with more detailed error handling
-        try:
-            qa_pairs = json.loads(cleaned_json)
-        except json.JSONDecodeError as je:
-            # Log the specific position where the error occurred
-            logger.error(f"{Fore.RED}❌ JSON parsing error at position {je.pos}: {je.msg}{Fore.RESET}")
-            logger.debug(f"Problem chunk: {cleaned_json[max(0, je.pos-50):min(len(cleaned_json), je.pos+50)]}")
-            return []
-            
-        # Validate the structure
-        if not isinstance(qa_pairs, list):
-            logger.error(f"{Fore.RED}❌ Response is not a JSON array{Fore.RESET}")
-            return []
-            
-        # Validate each QA pair
-        valid_pairs = []
-        for pair in qa_pairs:
-            if not isinstance(pair, dict):
-                continue
-            if 'question' not in pair or 'answer' not in pair:
-                continue
-            if not isinstance(pair['question'], str) or not isinstance(pair['answer'], str):
-                continue
-            valid_pairs.append(pair)
-        
-        if not valid_pairs:
-            logger.error(f"{Fore.RED}❌ No valid QA pairs found in response{Fore.RESET}")
-            return []
-            
-        return valid_pairs
-        
+        print(message.content[0].text)
+        response_text = message.content[0].text.strip()
+        return json.loads(response_text)
     except Exception as e:
-        logger.error(f"{Fore.RED}❌ Unexpected error processing response: {str(e)}{Fore.RESET}")
-        logger.debug(f"Full response text: {response_text[:500]}...")  # Log first 500 chars
+        logger.error(f"{Fore.RED}❌ Error processing response: {str(e)}{Fore.RESET}")
         return []
 
 def save_to_jsonl(data, output_file):
