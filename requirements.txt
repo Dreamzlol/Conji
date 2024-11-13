@@ -1,0 +1,5 @@
+anthropic>=0.39.0
+python-dotenv>=1.0.1
+PyPDF2>=3.0.0
+colorama>=0.4.6
+alive-progress>=3.2.0
