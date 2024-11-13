@@ -1,6 +1,4 @@
-# Conji
-
-# PDF to Synthetic Dataset
+# Conji - PDF to Synthetic Dataset
 
 A Python tool that automatically generates high-quality question and answer pairs from PDF technical documentation using Claude AI.
 Which can be used to create synthetic datasets for training LLMs.
