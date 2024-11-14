@@ -1,15 +1,11 @@
-# Conji - PDF to Synthetic Dataset
-
-A Python tool that automatically generates high-quality question and answer pairs from PDF technical documentation using Claude AI.
-Which can be used to create synthetic datasets for training LLMs.
+![Group 1](https://github.com/user-attachments/assets/9fc91bcd-bfd2-4933-b966-e70335c28467)
 
 ## Features
 
 - 📚 Batch processing of multiple PDF files
-- 🤖 AI-powered Q&A pair generation using Claude 3.5
+- 🤖 Generate Q&A pairs using Anthropic
 - 💾 JSONL output format for easy integration with ML pipelines
 - 📊 Dataset statistics and progress tracking
-- 🎨 Colorful console output with progress bars
 
 ## Prerequisites
 
@@ -44,7 +40,7 @@ python main.py
 
 The script will:
 - Process all PDFs in the data folder
-- Generate Q&A pairs using Claude AI
+- Generate Q&A pairs using Anthropic
 - Save the results in JSONL format
 - Display progress and summary statistics
 
@@ -85,10 +81,6 @@ Key settings can be modified in `src/config.py`:
 - The script includes comprehensive error handling for PDF processing and API calls
 - Failed PDF processing won't stop the entire batch
 - Detailed error logging for debugging
-
-## License
-
-MIT License
 
 ## Contributing
 
