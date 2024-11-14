@@ -36,7 +36,12 @@ class PDFProcessor:
                 model=self.config.model_name,
                 max_tokens=self.config.max_tokens,
                 temperature=self.config.temperature,
-                system="You are a technical documentation expert. Create precise, practical Q&A pairs that accurately reflect the source material.",
+                system="""You are a specialized technical documentation analyzer. Your strict guidelines are:
+1. NEVER create, modify, or combine code examples - use ONLY exact code snippets from the documentation
+2. Extract and preserve code examples exactly as they appear in the source material, including comments and whitespace
+3. Maintain precise technical terminology and definitions from the documentation
+4. Generate questions that test understanding of the documented code examples and concepts
+5. Every answer must be directly verifiable against the source material""",
                 messages=[{"role": "user", "content": prompt}]
             )
             
@@ -50,20 +55,40 @@ class PDFProcessor:
     def _create_prompt(self, content: str) -> str:
         """Create the prompt for QA pair generation."""
         return f"""
-        You are tasked with creating educational question-answer pairs from technical documentation. Focus exclusively on the content provided in the PDF.
+        Analyze the provided technical documentation and generate question-answer pairs that precisely reflect its content.
 
-        Instructions:
-        1. Generate 20 question-answer pairs that cover key concepts, techniques, and code examples from the documentation
-        2. For code-related content:
-           - Use only code examples that appear in the documentation
-           - Include the original code snippets in your answers
-           - Explain the code's purpose and functionality
-           - Format code using Markdown with the correct language identifier: ```language\\ncode\\n```
-        3. For conceptual content:
-           - Focus on technical definitions, processes, and important concepts
-           - Reference specific sections from the documentation and always provide the example code from the PDF file
-        4. Each answer should be detailed yet concise, focusing on practical understanding
+        Critical Rules:
+        - ONLY use code examples that appear verbatim in the documentation
+        - DO NOT create new code examples or modify existing ones
+        - DO NOT combine code snippets or create variations
+        - If a concept doesn't have a code example in the documentation, do not provide one
 
-        Format: Return a valid JSON array of objects with only the 'question' and 'answer' keys, without the JSON Markdown Code Block or any additional text.
-        Content: {content}
+        Core Requirements:
+        1. Generate 20 question-answer pairs with the following distribution:
+           - 60% questions about specific code examples from the documentation
+           - 20% questions about documented concepts and their implementation
+           - 20% questions about documented use cases and best practices
+
+        2. Code Example Requirements:
+           - Copy code snippets exactly as they appear in the documentation
+           - Include the complete context as shown in the documentation
+           - Preserve all original formatting, comments, and variable names
+           - Format code using: ```language\\ncode\\n```
+           - Reference the specific section/page where the code appears
+
+        3. Technical Accuracy Requirements:
+           - Use only terminology and definitions present in the documentation
+           - Include exact version numbers and compatibility information
+           - Reference specific documentation sections for all information
+           - Never extrapolate or add information not in the source material
+
+        4. Answer Structure:
+           - Start with relevant quotes or references from the documentation
+           - Include only code examples that appear in the source material
+           - Explain concepts using the documentation's own terminology
+           - List any limitations or requirements mentioned in the documentation
+
+        Output Format: Return a JSON array containing objects with 'question' and 'answer' keys only. Do not include any additional formatting or explanation.
+
+        Documentation Content: {content}
         """ 
