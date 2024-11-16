@@ -51,44 +51,70 @@ class PDFProcessor:
         except Exception as e:
             logger.error(f"Failed to generate QA pairs: {e}")
             return []
-
+    
     def _create_prompt(self, content: str) -> str:
-        """Create the prompt for QA pair generation."""
-        return f"""
-        Analyze the provided technical documentation and generate question-answer pairs that precisely reflect its content.
+        """Create an enhanced prompt for documentation QA pair generation."""
+        return f'''
+        You are an expert in creating educational content for programming languages. Analyze the provided technical documentation and generate diverse, high-quality question-answer pairs that will help train an LLM to understand and explain this technology.
 
-        Critical Rules:
-        - ONLY use code examples that appear verbatim in the documentation
-        - DO NOT create new code examples or modify existing ones
-        - DO NOT combine code snippets or create variations
-        - If a concept doesn't have a code example in the documentation, do not provide one
+        DOCUMENTATION ANALYSIS REQUIREMENTS:
+        1. First analyze the documentation for:
+        - Core concepts and fundamental principles
+        - Specific syntax and usage patterns
+        - Code examples and their context
+        - Best practices and recommendations
+        - Common use cases and scenarios
+        - Technical limitations and edge cases
 
-        Core Requirements:
-        1. Generate 20 question-answer pairs with the following distribution:
-           - 60% questions about specific code examples from the documentation
-           - 20% questions about documented concepts and their implementation
-           - 20% questions about documented use cases and best practices
+        QUESTION GENERATION GUIDELINES:
+        Generate 10 questions across these categories:
+        1. Conceptual Understanding (25%)
+        - Definition and purpose questions
+        - How concepts relate to each other
+        - Technical terminology explanation
+        Example: "What is the purpose of the $bindable rune in Svelte?"
 
-        2. Code Example Requirements:
-           - Copy code snippets exactly as they appear in the documentation
-           - Include the complete context as shown in the documentation
-           - Preserve all original formatting, comments, and variable names
-           - Format code using: ```language\\ncode\\n```
-           - Reference the specific section/page where the code appears
+        2. Practical Implementation (35%)
+        - Syntax usage questions
+        - Code pattern questions
+        - Implementation steps
+        Example: "How do you declare a bindable prop in a Svelte component?"
 
-        3. Technical Accuracy Requirements:
-           - Use only terminology and definitions present in the documentation
-           - Include exact version numbers and compatibility information
-           - Reference specific documentation sections for all information
-           - Never extrapolate or add information not in the source material
+        3. Code Analysis (25%)
+        - Code example interpretation
+        - Syntax explanation
+        - Output prediction
+        Example: "What will happen in this code when the input value changes?"
 
-        4. Answer Structure:
-           - Start with relevant quotes or references from the documentation
-           - Include only code examples that appear in the source material
-           - Explain concepts using the documentation's own terminology
-           - List any limitations or requirements mentioned in the documentation
+        4. Best Practices & Edge Cases (15%)
+        - Usage recommendations
+        - Common pitfalls
+        - Limitations and constraints
+        Example: "When should you avoid using bindable props in Svelte?"
 
-        Output Format: Return a JSON array containing objects with 'question' and 'answer' keys only. Do not include any additional formatting or explanation.
+        ANSWER REQUIREMENTS:
+        1. Include code examples ONLY if they appear verbatim in the documentation:
+        ```language
+        [exact code from documentation]
+        ```
 
-        Documentation Content: {content}
-        """ 
+        3. Provide context about:
+        - Where this information appears in the docs
+        - How it relates to other concepts
+        - Any important prerequisites
+
+        4. Reference specific limitations, warnings, or notes from the docs
+
+        QUALITY CONTROLS:
+        - Never invent or modify code examples
+        - Use only terminology present in the documentation
+        - Maintain technical accuracy with source material
+        - Include version-specific information when present
+        - Preserve all original formatting and syntax
+
+        OUTPUT FORMAT:
+        Return a JSON array containing objects with 'question' and 'answer' keys only. Do not include any additional formatting or explanation.
+
+        Documentation Content to Analyze: 
+        {content}
+        '''
